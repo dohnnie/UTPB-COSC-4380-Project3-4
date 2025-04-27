@@ -32,6 +32,10 @@ public class DHE {
      */
     public DHE(int gBits, int pBits) {
         // TODO
+        // Convert gBits -> generator
+        // Convert pBits -> prime
+        prime = Crypto.getPrime(pBits - 1, pBits, 5);
+        generator = Crypto.getGenerator(gBits, prime);
     }
 
     /**
@@ -40,9 +44,10 @@ public class DHE {
      * @param bits The number of bits to target for the base
      * @return The generated base value
      */
+    // int -> BigInteger
     public BigInteger getBase(int bits) {
         // TODO
-        return null;
+        return Crypto.getRandom(bits, bits);
     }
 
     /**
@@ -53,7 +58,7 @@ public class DHE {
      */
     public BigInteger getExponent(BigInteger base) {
         // TODO
-        return null;
+        return Crypto.fastMod();
     }
 
     /**

@@ -70,7 +70,7 @@ public class Crypto {
      */
     public static BigInteger getGenerator(int bits, BigInteger p) {
         // TODO: Generate an initial g with the given bit width.
-        for (BigInteger g = ; g.compareTo(p) < 0; g.add(BigInteger.ONE)) {
+        for (BigInteger g = getRandom(bits - 1, bits); g.compareTo(p) < 0; g.add(BigInteger.ONE)) {
             if (isValidG(g, p)) {
                 return g;
             }
@@ -171,6 +171,7 @@ public class Crypto {
         while (!checkPrime(p, numChecks)) {
             i += 1;
             p = getRandom(minBits, maxBits);
+            System.out.println("Checked " + i + " numbers");
         }
         System.out.printf("Checked %d numbers for primality%n", i);
         return p;
