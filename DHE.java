@@ -11,16 +11,14 @@ public class DHE {
      * <p>Member variable for the generator parameter.</p>
      * <p><b>Do not leave this public</b></p>
      */
-    public BigInteger generator;
-    // TODO
+    private BigInteger generator;
 
     /**
      * <h3>prime</h3>
      * <p>Member variable for the prime parameter.</p>
      * <p><b>Do not leave this public</b></p>
      */
-    public BigInteger prime;
-    // TODO
+    private BigInteger prime;
 
     /**
      * <h3>DHE Constructor</h3>
