@@ -34,7 +34,7 @@ public class DHE {
         // TODO
         // Convert gBits -> generator
         // Convert pBits -> prime
-        prime = Crypto.getPrime(pBits - 1, pBits, 5);
+        prime = Crypto.getPrime(pBits, pBits, 10);
         generator = Crypto.getGenerator(gBits, prime);
     }
 
@@ -44,7 +44,6 @@ public class DHE {
      * @param bits The number of bits to target for the base
      * @return The generated base value
      */
-    // int -> BigInteger
     public BigInteger getBase(int bits) {
         // TODO
         return Crypto.getRandom(bits, bits);
@@ -58,7 +57,7 @@ public class DHE {
      */
     public BigInteger getExponent(BigInteger base) {
         // TODO
-        return Crypto.fastMod();
+        return generator.modPow(base, prime);
     }
 
     /**
@@ -70,7 +69,7 @@ public class DHE {
      */
     public BigInteger getKey(BigInteger base, BigInteger exponent) {
         // TODO
-        return null;
+        return exponent.modPow(base, prime);
     }
 
     /**
@@ -89,7 +88,7 @@ public class DHE {
         System.out.printf("A = %s%nB = %s%n%n", A, B);
         BigInteger aKey = d.getKey(a, B);
         BigInteger bKey = d.getKey(b, A);
-        System.out.printf("keys = %s%n%s", aKey, bKey);
+        System.out.printf("keys = %s%n%s%n", aKey, bKey);
 
         DHE e = new DHE(512, 2048);
         System.out.printf("g = %s%np = %s%n%n", d.generator, d.prime);
@@ -104,6 +103,6 @@ public class DHE {
         BigInteger xKey = e.getKey(x, e.getKey(y, Z));
         BigInteger yKey = e.getKey(y, e.getKey(z, X));
         BigInteger zKey = e.getKey(z, e.getKey(x, Y));
-        System.out.printf("keys = %s%n%s%n%s", xKey, yKey, zKey);
+        System.out.printf("keys = %s%n%s%n%s%n", xKey, yKey, zKey);
     }
 }

@@ -14,6 +14,7 @@ public class Crypto {
     /**
      * <h3>fastMod</h3>
      * <p>Implementation of the fast modular exponentiation algorithm using BigInteger</p>
+     * <p>Successive Squaring<p>
      * @param g
      * @param a
      * @param p
@@ -21,11 +22,10 @@ public class Crypto {
      */
     public static BigInteger fastMod(BigInteger g, BigInteger a, BigInteger p) {
         int bitWidth = a.bitLength();
-        BigInteger one = new BigInteger("1");
         BigInteger b = BigInteger.ZERO.add(a);
         boolean bits[] = new boolean[bitWidth];
         for (int i = 0; i < bitWidth; i++) {
-            boolean bit = b.and(one).equals(one);
+            boolean bit = b.and(BigInteger.ONE).equals(BigInteger.ONE);
             bits[bitWidth-i-1] = bit;
             b.shiftRight(1);
         }
@@ -70,7 +70,7 @@ public class Crypto {
      */
     public static BigInteger getGenerator(int bits, BigInteger p) {
         // TODO: Generate an initial g with the given bit width.
-        for (BigInteger g = getRandom(bits - 1, bits); g.compareTo(p) < 0; g.add(BigInteger.ONE)) {
+        for (BigInteger g = getRandom(bits, bits); g.compareTo(p) < 0; g.add(BigInteger.ONE)) {
             if (isValidG(g, p)) {
                 return g;
             }
@@ -87,7 +87,7 @@ public class Crypto {
      */
     public static BigInteger getRandom(int minBits, int maxBits) {
         BigInteger result = new BigInteger(maxBits, Rand.getRand());
-        while (result.bitLength() <= minBits) {
+        while (result.bitLength() < minBits) {
             result = new BigInteger(maxBits, Rand.getRand());
         }
         return result;
@@ -171,7 +171,6 @@ public class Crypto {
         while (!checkPrime(p, numChecks)) {
             i += 1;
             p = getRandom(minBits, maxBits);
-            System.out.println("Checked " + i + " numbers");
         }
         System.out.printf("Checked %d numbers for primality%n", i);
         return p;
@@ -254,6 +253,11 @@ public class Crypto {
      * <p>For testing purposes.</p>
      */
     public static void main(String[] args) {
+        BigInteger num1 = new BigInteger("5");
+        BigInteger num2 = new BigInteger("2");
+        BigInteger num3 = new BigInteger("7");
+        System.out.println(num1.modPow(num2, num3));
+        System.out.println(fastMod(num1, num2, num3));
         extendedGCD(new BigInteger("65537"), new BigInteger("3120"));
     }
 }
