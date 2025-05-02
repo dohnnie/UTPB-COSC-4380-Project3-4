@@ -11,7 +11,7 @@ public class RSA {
      * <p>One of the two primes used to generate n</p>
      * <p><b>Do not leave this public</b></p>
      */
-    public BigInteger p;
+    private BigInteger p;
     // TODO
 
     /**
@@ -19,7 +19,7 @@ public class RSA {
      * <p>One of the two primes used to generate n</p>
      * <p><b>Do not leave this public</b></p>
      */
-    public BigInteger q;
+    private BigInteger q;
     // TODO
 
     /**
@@ -27,7 +27,7 @@ public class RSA {
      * <p>The result of (p-1)(q-1)</p>
      * <p><b>Do not leave this public</b></p>
      */
-    public BigInteger phi;
+    private BigInteger phi;
     // TODO
 
     /**
@@ -47,7 +47,7 @@ public class RSA {
      * <p>The modular inverse of e and one of two values (along with n) which make up the private key.</p>
      * <p><b>Do not leave this public</b></p>
      */
-    public BigInteger d;
+    private BigInteger d;
     // TODO
 
     /**
@@ -59,6 +59,15 @@ public class RSA {
      */
     public RSA(int bits) {
         // TODO
+        p = Crypto.getPrime(bits, bits, 10);
+        q = Crypto.getPrime(bits, bits, 10);
+        BigInteger a = p.subtract(BigInteger.ONE);
+        BigInteger b = q.subtract(BigInteger.ONE);
+        n = p.multiply(q);
+        BigInteger pq = a.multiply(b);
+        phi = pq.abs().divide(Crypto.gcd(a,b));
+        e = Crypto.coprime(phi);
+        d = Crypto.modularInverse(e, phi);
     }
 
     /**

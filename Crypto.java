@@ -231,6 +231,15 @@ public class Crypto {
         return new BigInteger[]{gcd, y1, y};
     }
 
+    public static BigInteger coprime(BigInteger a) {
+        BigInteger result = getRandom(a.bitLength(), a.bitLength());
+        while(!gcd(result, a).equals(BigInteger.ONE)) {
+            result = getRandom(a.bitLength(), a.bitLength());
+        }
+
+        return result;
+    }
+
     /**
      * <h3>modularInverse</h3>
      * <p>Computes the modular inverse (private key) of an RSA public key given e and phi.</p>
