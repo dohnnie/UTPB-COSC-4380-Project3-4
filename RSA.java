@@ -1,4 +1,5 @@
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 
 /**
  * <h1>RSA</h1>
@@ -65,9 +66,9 @@ public class RSA {
         BigInteger b = q.subtract(BigInteger.ONE);
         n = p.multiply(q);
         BigInteger pq = a.multiply(b);
-        phi = pq.abs().divide(Crypto.gcd(a,b));
+        phi = pq.abs().divide(Crypto.gcd(a,b)); // |(p-1)(q-1)|/ gcd((p-1), (q-1))
         e = Crypto.coprime(phi);
-        d = Crypto.modularInverse(e, phi);
+        d = e.modInverse(phi); //this^-1 mod n
     }
 
     /**
@@ -88,7 +89,9 @@ public class RSA {
      */
     public String encrypt(String message, BigInteger[] pubKey) {
         // TODO
-        return null;
+        byte[] messageBytes = message.getBytes(Charset.forName("ASCII"));
+        BigInteger m = new BigInteger(messageBytes);
+        return new String(m.modPow(pubKey[0], pubKey[1]).toByteArray());
     }
 
     /**
@@ -99,7 +102,9 @@ public class RSA {
      */
     public String decrypt(String ciphertext) {
         // TODO
-        return null;
+        byte[] messageBytes = ciphertext.getBytes(Charset.forName("ASCII"));
+        BigInteger m = new BigInteger(messageBytes);
+        return new String(m.modPow(d, n).toByteArray());
     }
 
     /**
@@ -137,6 +142,14 @@ public class RSA {
         RSA b = new RSA(4096);
         BigInteger[] bPub = b.getPubKey();
         System.out.printf("p = %s%nq = %s%nn = %s%nphi = %s%ne = %s%nd = %s%n%n", b.p, b.q, bPub[1], b.phi, bPub[0], b.d);
+
+        String message = "Hello";
+        System.out.printf("Message: %s%n", message);
+        String encrypted = a.encrypt(message, aPub);
+        System.out.printf("Encrypted Msg: %s%n", encrypted);
+        String decrypted = a.decrypt(encrypted);
+        System.out.printf("Decrypted Msg: %s%n", decrypted);
+
 
         String message1 = "";
         System.out.printf("msg: %s%n", message1);

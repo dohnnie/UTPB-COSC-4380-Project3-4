@@ -234,7 +234,7 @@ public class Crypto {
     public static BigInteger coprime(BigInteger a) {
         BigInteger result = getRandom(a.bitLength(), a.bitLength());
         while(!gcd(result, a).equals(BigInteger.ONE)) {
-            result = getRandom(a.bitLength(), a.bitLength());
+            result = result.add(BigInteger.ONE);
         }
 
         return result;
