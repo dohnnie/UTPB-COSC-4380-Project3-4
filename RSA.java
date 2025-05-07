@@ -1,5 +1,4 @@
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 
 /**
  * <h1>RSA</h1>
@@ -62,13 +61,12 @@ public class RSA {
         // TODO
         p = Crypto.getPrime(bits, bits, 10);
         q = Crypto.getPrime(bits, bits, 10);
-        BigInteger a = p.subtract(BigInteger.ONE);
-        BigInteger b = q.subtract(BigInteger.ONE);
         n = p.multiply(q);
-        BigInteger pq = a.multiply(b);
-        phi = pq.abs().divide(Crypto.gcd(a,b)); // |(p-1)(q-1)|/ gcd((p-1), (q-1))
+        phi = (p.subtract(BigInteger.ONE)).multiply((q.subtract(BigInteger.ONE))); // Euler's totient
+        //TODO
+        // Redo e and d generation
         e = Crypto.coprime(phi);
-        d = e.modInverse(phi); //this^-1 mod n
+        d = e.modInverse(phi);
     }
 
     /**
@@ -89,9 +87,8 @@ public class RSA {
      */
     public String encrypt(String message, BigInteger[] pubKey) {
         // TODO
-        byte[] messageBytes = message.getBytes(Charset.forName("ASCII"));
-        BigInteger m = new BigInteger(messageBytes);
-        return new String(m.modPow(pubKey[0], pubKey[1]).toByteArray());
+        BigInteger encoded = new BigInteger(message.getBytes());
+        return encoded.modPow(pubKey[0], pubKey[1]).toString();
     }
 
     /**
@@ -102,9 +99,8 @@ public class RSA {
      */
     public String decrypt(String ciphertext) {
         // TODO
-        byte[] messageBytes = ciphertext.getBytes(Charset.forName("ASCII"));
-        BigInteger m = new BigInteger(messageBytes);
-        return new String(m.modPow(d, n).toByteArray());
+        BigInteger encoded = new BigInteger(ciphertext.getBytes());
+        return encoded.modPow(d, n).toString();
     }
 
     /**
@@ -115,7 +111,8 @@ public class RSA {
      */
     public String sign(String message) {
         // TODO
-        return null;
+        BigInteger s = new BigInteger(message.getBytes());
+        return new String(s.modPow(d, n).toByteArray());
     }
 
     /**
@@ -127,7 +124,8 @@ public class RSA {
      */
     public String authenticate(String message, BigInteger[] pubKey) {
         // TODO
-        return null;
+        BigInteger v = new BigInteger(message.getBytes());
+        return new String(v.modPow(pubKey[0], pubKey[1]).toByteArray());
     }
 
     /**
@@ -143,15 +141,7 @@ public class RSA {
         BigInteger[] bPub = b.getPubKey();
         System.out.printf("p = %s%nq = %s%nn = %s%nphi = %s%ne = %s%nd = %s%n%n", b.p, b.q, bPub[1], b.phi, bPub[0], b.d);
 
-        String message = "Hello";
-        System.out.printf("Message: %s%n", message);
-        String encrypted = a.encrypt(message, aPub);
-        System.out.printf("Encrypted Msg: %s%n", encrypted);
-        String decrypted = a.decrypt(encrypted);
-        System.out.printf("Decrypted Msg: %s%n", decrypted);
-
-
-        String message1 = "";
+        String message1 = "hello";
         System.out.printf("msg: %s%n", message1);
         String signed1 = a.sign(message1);
         System.out.printf("Signed by A ({msg}privA): %s%n", signed1);

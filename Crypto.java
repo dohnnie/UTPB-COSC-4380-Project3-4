@@ -225,19 +225,18 @@ public class Crypto {
         BigInteger gcd = values[0];
         BigInteger x1 = values[1];
         BigInteger y1 = values[2];
-        //BigInteger x = y1;x
         BigInteger y = x1.subtract(a.divide(b).multiply(y1));
         System.out.printf("gcd = %s, a = %s, b = %s%n", gcd, y1, y);
         return new BigInteger[]{gcd, y1, y};
     }
 
     public static BigInteger coprime(BigInteger a) {
-        BigInteger result = getRandom(a.bitLength(), a.bitLength());
-        while(!gcd(result, a).equals(BigInteger.ONE)) {
-            result = result.add(BigInteger.ONE);
+        BigInteger e = BigInteger.valueOf(655347);
+        while(!gcd(a, e).equals(BigInteger.ONE)) {
+            e = e.add(BigInteger.TWO);
         }
 
-        return result;
+        return e;
     }
 
     /**
