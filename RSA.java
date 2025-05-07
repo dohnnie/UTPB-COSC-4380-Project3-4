@@ -63,10 +63,9 @@ public class RSA {
         q = Crypto.getPrime(bits, bits, 10);
         n = p.multiply(q);
         phi = (p.subtract(BigInteger.ONE)).multiply((q.subtract(BigInteger.ONE))); // Euler's totient
-        //TODO
-        // Redo e and d generation
         e = Crypto.coprime(phi);
         d = e.modInverse(phi);
+        verifyKeys(p, q, phi, n, d);
     }
 
     /**
@@ -87,8 +86,9 @@ public class RSA {
      */
     public String encrypt(String message, BigInteger[] pubKey) {
         // TODO
+        message = checkMessage(message);
         BigInteger encoded = new BigInteger(message.getBytes());
-        return encoded.modPow(pubKey[0], pubKey[1]).toString();
+        return new String(encoded.modPow(pubKey[0], pubKey[1]).toByteArray());
     }
 
     /**
@@ -100,7 +100,7 @@ public class RSA {
     public String decrypt(String ciphertext) {
         // TODO
         BigInteger encoded = new BigInteger(ciphertext.getBytes());
-        return encoded.modPow(d, n).toString();
+        return new String(encoded.modPow(d, n).toByteArray());
     }
 
     /**
@@ -111,6 +111,7 @@ public class RSA {
      */
     public String sign(String message) {
         // TODO
+        message = checkMessage(message);
         BigInteger s = new BigInteger(message.getBytes());
         return new String(s.modPow(d, n).toByteArray());
     }
@@ -128,6 +129,56 @@ public class RSA {
         return new String(v.modPow(pubKey[0], pubKey[1]).toByteArray());
     }
 
+    // This method is used if an empty string is passed as the message to encrypt
+    // Gets around a no value error from the BigInteger class
+    private String checkMessage(String message) {
+        if(message.equals("")) {
+            return "No message";
+        }
+
+        return message;
+    }
+
+    // Testing the relationship between each key and making sure they're valid
+    private void verifyKeys(BigInteger p, BigInteger q, BigInteger phi, BigInteger n, BigInteger d) {
+        boolean isValid = true;
+        int numChecks = 10;
+        if(!Crypto.checkPrime(p, numChecks) || !Crypto.checkPrime(q, 10)) {
+            System.out.println("Either p or q are not prime numbers");
+            isValid = false;
+        }
+
+        
+        if(!n.equals(p.multiply(q))) {
+            System.out.println("N is not p*q");
+            isValid = false;
+        }
+
+        if(!phi.equals((p.subtract(BigInteger.ONE)).multiply((q.subtract(BigInteger.ONE))))) {
+            System.out.println("Phi is not equal to (p-1)(q-1)");
+            isValid = false;
+        }
+
+        if(e.min(phi).equals(phi)) {
+            System.out.println("e >= phi");
+            isValid = false;
+        }
+
+        if(!(Crypto.gcd(e, phi).equals(BigInteger.ONE))) {
+            System.out.println("e is not coprime to phi");
+            isValid = false;
+        }
+
+        if(((d.multiply(e)).mod(phi)).equals(BigInteger.ONE)) {
+            System.out.println("d, and e dont fit the identify of ed === 1 (mod phi)");
+            isValid = false;
+        }
+
+        if(isValid) {
+            System.out.println("All tests passed! Keys are valid");
+        }
+    }
+
     /**
      * <h3>main</h3>
      * <p><b>For testing purposes only.</b></p>
@@ -141,7 +192,7 @@ public class RSA {
         BigInteger[] bPub = b.getPubKey();
         System.out.printf("p = %s%nq = %s%nn = %s%nphi = %s%ne = %s%nd = %s%n%n", b.p, b.q, bPub[1], b.phi, bPub[0], b.d);
 
-        String message1 = "hello";
+        String message1 = "";
         System.out.printf("msg: %s%n", message1);
         String signed1 = a.sign(message1);
         System.out.printf("Signed by A ({msg}privA): %s%n", signed1);
