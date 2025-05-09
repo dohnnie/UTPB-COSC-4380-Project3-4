@@ -114,7 +114,7 @@ public class RSA {
      */
     public String decrypt(String ciphertext) {
         // TODO
-        BigInteger m = checkMessage(ciphertext);
+        BigInteger m = new BigInteger(ciphertext);
         BigInteger plain = m.modPow(this.d, this.n);
         return plain.toString();
     }
@@ -141,7 +141,7 @@ public class RSA {
      */
     public String authenticate(String message, BigInteger[] pubKey) {
         // TODO
-        BigInteger v = checkMessage(message);
+        BigInteger v = new BigInteger(message);
         BigInteger plain = v.modPow(pubKey[0], pubKey[1]);
         return plain.toString();
     }
@@ -228,7 +228,7 @@ public class RSA {
         String message1 = "Hello";
         String encrypted = a.sign(message1);
         System.out.printf("Signed message: %s%n", encrypted);
-        String decrypted = b.authenticate(message1, aPub);
+        String decrypted = b.authenticate(encrypted, aPub);
         System.out.printf("Authenticated message: ", decrypted);
         System.out.printf("msg: %s%n", message1);
         String signed1 = a.sign(message1);
@@ -252,6 +252,6 @@ public class RSA {
         String auth2 = a.authenticate(signed2, bPub);
         System.out.printf("Authenticated by A ({msg}pubA): %s%n", auth2);
         String plain2 = a.decrypt(auth2);
-        System.out.printf("Received by A: %s%n", plain2);
+        System.out.printf("Received by A: %s%n", new String(plain2.getBytes()));
     }
 }
