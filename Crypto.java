@@ -172,7 +172,6 @@ public class Crypto {
             i += 1;
             p = getRandom(minBits, maxBits);
         }
-        System.out.printf("Checked %d numbers for primality%n", i);
         return p;
     }
 
@@ -226,12 +225,11 @@ public class Crypto {
         BigInteger x1 = values[1];
         BigInteger y1 = values[2];
         BigInteger y = x1.subtract(a.divide(b).multiply(y1));
-        System.out.printf("gcd = %s, a = %s, b = %s%n", gcd, y1, y);
         return new BigInteger[]{gcd, y1, y};
     }
 
     public static BigInteger coprime(BigInteger a) {
-        BigInteger e = BigInteger.valueOf(655347);
+        BigInteger e = BigInteger.valueOf(65537);
         while(!gcd(a, e).equals(BigInteger.ONE)) {
             e = e.add(BigInteger.TWO);
         }
@@ -261,11 +259,17 @@ public class Crypto {
      * <p>For testing purposes.</p>
      */
     public static void main(String[] args) {
-        BigInteger num1 = new BigInteger("5");
+        /*BigInteger num1 = new BigInteger("5");
         BigInteger num2 = new BigInteger("2");
         BigInteger num3 = new BigInteger("7");
         System.out.println(num1.modPow(num2, num3));
         System.out.println(fastMod(num1, num2, num3));
         extendedGCD(new BigInteger("65537"), new BigInteger("3120"));
+        */
+        BigInteger phi = new BigInteger("3120");
+        BigInteger e = new BigInteger("17");
+        BigInteger d = Crypto.modularInverse(e, phi);
+        System.out.println("d = " + d);
+        System.out.println("e*d % phi = " + e.multiply(d).mod(phi));
     }
 }

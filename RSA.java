@@ -1,4 +1,5 @@
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 
 /**
  * <h1>RSA</h1>
@@ -6,6 +7,18 @@ import java.math.BigInteger;
  */
 public class RSA {
 
+    // p, q, n, phi(n), e, d
+    // p, q = prime
+    // n = pq
+    // phi(n) = euler's totient = (p-1)(q-1)
+    // e = any number that's coprime to phi(n), 1 < e < phi(n)
+    // d = e^-1 mod phi(n)
+    // ed mod phi = 1
+
+
+    // To encrypt: M = m
+    // plaintext = ciphertext^d mod n
+    // m < n
     /**
      * <h3>p</h3>
      * <p>One of the two primes used to generate n</p>
@@ -59,10 +72,11 @@ public class RSA {
      */
     public RSA(int bits) {
         // TODO
-        p = Crypto.getPrime(bits, bits, 10);
-        q = Crypto.getPrime(bits, bits, 10);
+        System.out.println("Generating keys...");
+        p = BigInteger.probablePrime(bits, Rand.getRand());
+        q = BigInteger.probablePrime(bits, Rand.getRand());
         n = p.multiply(q);
-        phi = (p.subtract(BigInteger.ONE)).multiply((q.subtract(BigInteger.ONE))); // Euler's totient
+        phi = (p.subtract(BigInteger.ONE)).multiply((q.subtract(BigInteger.ONE))); // Euler's totient = (p-1)(q-1)
         e = Crypto.coprime(phi);
         d = e.modInverse(phi);
         verifyKeys(p, q, phi, n, d);
@@ -80,15 +94,16 @@ public class RSA {
     /**
      * <h3>encrypt</h3>
      * <p>Accepts a message String and a public key and returns the encrypted message.</p>
+     * <p>ciphertext = m^e mod n <p>
      * @param message A String containing a message (signed or in plaintext)
      * @param pubKey An array of BigInteger containing a public key [e, n].
      * @return The result of encrypting the message using the given public key.
      */
     public String encrypt(String message, BigInteger[] pubKey) {
         // TODO
-        message = checkMessage(message);
-        BigInteger encoded = new BigInteger(message.getBytes());
-        return new String(encoded.modPow(pubKey[0], pubKey[1]).toByteArray());
+        BigInteger encoded = checkMessage(message);
+        BigInteger cipher = encoded.modPow(pubKey[0], pubKey[1]);
+        return cipher.toString();
     }
 
     /**
@@ -99,8 +114,9 @@ public class RSA {
      */
     public String decrypt(String ciphertext) {
         // TODO
-        BigInteger encoded = new BigInteger(ciphertext.getBytes());
-        return new String(encoded.modPow(d, n).toByteArray());
+        BigInteger m = checkMessage(ciphertext);
+        BigInteger plain = m.modPow(d, n);
+        return new String(plain.toByteArray(), Charset.forName("UTF-8"));
     }
 
     /**
@@ -111,9 +127,9 @@ public class RSA {
      */
     public String sign(String message) {
         // TODO
-        message = checkMessage(message);
-        BigInteger s = new BigInteger(message.getBytes());
-        return new String(s.modPow(d, n).toByteArray());
+        BigInteger s = checkMessage(message);
+        BigInteger result = s.modPow(d, n);
+        return result.toString();
     }
 
     /**
@@ -125,18 +141,21 @@ public class RSA {
      */
     public String authenticate(String message, BigInteger[] pubKey) {
         // TODO
-        BigInteger v = new BigInteger(message.getBytes());
-        return new String(v.modPow(pubKey[0], pubKey[1]).toByteArray());
+        BigInteger v = checkMessage(message);
+        BigInteger plain = v.modPow(pubKey[0], pubKey[1]);
+        return new String(plain.toByteArray(), Charset.forName("UTF-8"));
     }
 
     // This method is used if an empty string is passed as the message to encrypt
     // Gets around a no value error from the BigInteger class
-    private String checkMessage(String message) {
+    private BigInteger checkMessage(String message) {
         if(message.equals("")) {
-            return "No message";
+            return BigInteger.valueOf(0);
         }
 
-        return message;
+        BigInteger m = new BigInteger(message.getBytes(Charset.forName("UTF-8")));
+
+        return m;
     }
 
     // Testing the relationship between each key and making sure they're valid
@@ -159,6 +178,11 @@ public class RSA {
             isValid = false;
         }
 
+        if((n.min(phi)).equals(n)) {
+            System.out.println("n <= phi");
+            isValid = false;
+        }
+
         if(e.min(phi).equals(phi)) {
             System.out.println("e >= phi");
             isValid = false;
@@ -169,14 +193,23 @@ public class RSA {
             isValid = false;
         }
 
-        if(((d.multiply(e)).mod(phi)).equals(BigInteger.ONE)) {
+        // Testing e and d
+        BigInteger ed = e.multiply(d);
+
+        if(!((e.multiply(d)).mod(phi)).equals(BigInteger.ONE) ) {
             System.out.println("d, and e dont fit the identify of ed === 1 (mod phi)");
             isValid = false;
+        }
+
+        if(n.bitLength() < 2048) {
+            System.out.println("n is less than 2048 bits");
         }
 
         if(isValid) {
             System.out.println("All tests passed! Keys are valid");
         }
+
+        System.out.println();
     }
 
     /**
@@ -192,7 +225,7 @@ public class RSA {
         BigInteger[] bPub = b.getPubKey();
         System.out.printf("p = %s%nq = %s%nn = %s%nphi = %s%ne = %s%nd = %s%n%n", b.p, b.q, bPub[1], b.phi, bPub[0], b.d);
 
-        String message1 = "";
+        String message1 = "Hello";
         System.out.printf("msg: %s%n", message1);
         String signed1 = a.sign(message1);
         System.out.printf("Signed by A ({msg}privA): %s%n", signed1);
@@ -201,6 +234,7 @@ public class RSA {
 
         String auth1 = b.decrypt(cipher1);
         System.out.printf("Received by B ({msg}privA): %s%n", auth1);
+        
         String plain1 = b.authenticate(auth1, aPub);
         System.out.printf("Authenticated by B: %s%n", plain1);
 
