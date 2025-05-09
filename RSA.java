@@ -115,8 +115,8 @@ public class RSA {
     public String decrypt(String ciphertext) {
         // TODO
         BigInteger m = checkMessage(ciphertext);
-        BigInteger plain = m.modPow(d, n);
-        return new String(plain.toByteArray(), Charset.forName("UTF-8"));
+        BigInteger plain = m.modPow(this.d, this.n);
+        return plain.toString();
     }
 
     /**
@@ -128,7 +128,7 @@ public class RSA {
     public String sign(String message) {
         // TODO
         BigInteger s = checkMessage(message);
-        BigInteger result = s.modPow(d, n);
+        BigInteger result = s.modPow(this.d, this.n);
         return result.toString();
     }
 
@@ -143,7 +143,7 @@ public class RSA {
         // TODO
         BigInteger v = checkMessage(message);
         BigInteger plain = v.modPow(pubKey[0], pubKey[1]);
-        return new String(plain.toByteArray(), Charset.forName("UTF-8"));
+        return plain.toString();
     }
 
     // This method is used if an empty string is passed as the message to encrypt
@@ -226,6 +226,10 @@ public class RSA {
         System.out.printf("p = %s%nq = %s%nn = %s%nphi = %s%ne = %s%nd = %s%n%n", b.p, b.q, bPub[1], b.phi, bPub[0], b.d);
 
         String message1 = "Hello";
+        String encrypted = a.sign(message1);
+        System.out.printf("Signed message: %s%n", encrypted);
+        String decrypted = b.authenticate(message1, aPub);
+        System.out.printf("Authenticated message: ", decrypted);
         System.out.printf("msg: %s%n", message1);
         String signed1 = a.sign(message1);
         System.out.printf("Signed by A ({msg}privA): %s%n", signed1);
