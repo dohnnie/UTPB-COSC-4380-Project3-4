@@ -22,16 +22,34 @@ public class AES {
     private String[] roundKey = new String[11]; // round keys for AES-128
     private int[] words = new int[44]; // 4 words for AES-128
 
+    private String[][] iv = new String[4][4]; // Initialization vector (IV) for CBC mode
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///  CONSTRUCTORS                                                                                                      ///
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public AES(String key) {
+        // Check if the key is valid
+        if (key.length() < 16) {
+            throw new IllegalArgumentException("Key must be at least 16 characters long.");
+        }
         // Initialize the key schedule and round keys
         for (int j = 0; j < this.roundKey.length; j++)  {
             this.roundKey[j] = ""; // Initialize round keys to empty strings
         }
         keyExpansion(key); // Generate the key schedule from the provided key.
+
+        // String[][] blockA = hexToBlock(a);
+        // String[][] blockB = hexToBlock(b);
+        // String[][] xor = xorBlocks(blockA, blockB);
+        // System.out.println("XOR: ");
+        // printBlock(xor);
+
+        // String test = "Two One Nine Two"; // Example plaintext (AES Debug.txt)
+        // String testHex = stringToHex(test);
+        // System.out.println("Hex: " + testHex);
+        // testHex = assertPadding(testHex);
+        // System.out.println("Hex: " + testHex);
 
     }
 
@@ -40,24 +58,129 @@ public class AES {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public String encrypt(String plaintext, boolean cbcMode) {
+
         printKeySchedule();
         String hexPlainText = stringToHex(plaintext); // Convert plaintext to hex
-        String[][] block = hexToBlock(hexPlainText); // Convert hex string to block (4x4 matrix)
-        
-        cipher(block, true);
 
-        String cipherText = blockToHex(block); // Print the ciphertext in hex format
-        
+        hexPlainText = assertPadding(hexPlainText); // Ensure padding is applied if needed
+
+        int blocks = hexPlainText.length() / 32; // Calculate the number of blocks needed
+
+        String cipherText = ""; // Initialize ciphertext
+
+
+        this.iv = getRandomBlock(); // Get a random initialization vector (IV)
+        String[][] lastBlock = this.iv; // Initialize the last block with the IV
+
+        if (cbcMode) {
+            Tools.debugLog("CBC Mode Enabled! Generating IV...");
+            Tools.debugLog("IV: ");
+            printBlock(iv); // Print the IV
+        }
+
+
+        for (int i = 0; i < blocks; i++) {
+            String blockHex = hexPlainText.substring(i * 32, (i + 1) * 32); // Get the current block
+            String[][] block = hexToBlock(blockHex); // Convert hex string to block (4x4 matrix)
+
+            if (cbcMode) {
+                block = xorBlocks(block, lastBlock); // XOR the block with the last block (or IV for the first block)
+                Tools.debugLog("XORing with last block: ");
+                printBlock(block); // Print the XORed block
+            }
+            
+            cipher(block, true); // Encrypt the block
+            cipherText += blockToHex(block); // Add block to total output ciphertext
+            lastBlock = block; // Update the last block value with the current block
+        }
+
         return cipherText;
+    }
+
+    public String[][] xorBlocks(String[][] block1, String[][] block2) {
+        String[][] result = new String[4][4]; // Create a new block to store the result
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                result[i][j] = Integer.toHexString(Integer.parseInt(block1[i][j], 16) ^ Integer.parseInt(block2[i][j], 16)); // XOR the blocks
+                result[i][j] = String.format("%2s", result[i][j]).replace(' ', '0'); // Pad with leading zeros
+            }
+        }
+        return result;
+    }
+
+    public String[][] getRandomBlock() {
+        String[][] block = new String[4][4]; // Create a new block to store the random values
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                block[i][j] = Integer.toHexString((int) (Math.random() * 256)); // Generate random hex values
+                block[i][j] = String.format("%2s", block[i][j]).replace(' ', '0'); // Pad with leading zeros
+            }
+        }
+        return block;
+    }
+
+    public static String[][] deepCopy(String[][] original) {
+        String[][] copy = new String[original.length][];
+        for (int i = 0; i < original.length; i++) {
+            copy[i] = original[i].clone(); // or use Arrays.copyOf(original[i], original[i].length);
+        }
+        return copy;
     }
 
     public String decrypt(String ciphertext, boolean cbcMode) {
         printKeySchedule();
-        String[][] block = hexToBlock(ciphertext); // Convert hex string to block (4x4 matrix)
-        cipher(block, false);
-        String plainText = blockToHex(block); // Print the plaintext in hex format
-        plainText = hexToString(plainText); // Convert hex string back to plaintext
+
+        int blocks = ciphertext.length() / 32; // Calculate the number of blocks needed
+
+        String plainText = ""; // Initialize ciphertext
+
+        String[][] lastBlock = this.iv; // Initialize the last block with the IV
+
+        for (int i = 0; i < blocks; i++) {
+            String blockHex = ciphertext.substring(i * 32, (i + 1) * 32); // Get the current block
+            String[][] block = hexToBlock(blockHex); // Convert hex string to block (4x4 matrix)
+            String[][] prevCipher = deepCopy(block); // Store the current block temporarily
+            cipher(block, false); // Decrypt the block
+            if (cbcMode) {
+                Tools.debugLog("XORing with last block: ");
+                String[][] temp = deepCopy(block); // Store the decrypted block temporarily
+
+                printBlock(block);
+                printBlock(temp); // Print the last block
+                block = xorBlocks(block, lastBlock); // XOR the block with the IV
+                lastBlock = prevCipher; // Update the last block value with the decrypted block
+                printBlock(block); // Print the XORed block
+            }
+            plainText += blockToHex(block); // Add block to total output plaintext
+        }
+
+        Tools.debugLog("Plaintext: " + plainText); // Print the ciphertext
+        
+        String paddingRemoved = removePKCS7PaddingFromHex(plainText); // Remove PKCS#7 padding
+        plainText = hexToString(paddingRemoved); // Convert hex string back to plaintext
         return plainText;
+    }
+
+    public String assertPadding(String hex) {
+        if (hex.length() % 32 != 0) { // Check if the length of the hex string is a multiple of 32
+            int paddingLength = 32 - (hex.length() % 32); // Calculate the padding length needed
+            Tools.debugLog("Padding needed for input text! Length: " + hex.length()/2 + " Padding Length: " + paddingLength/2);
+            int paddingBytes = paddingLength / 2; // Calculate the number of padding bytes needed
+            for (int i = 0; i < paddingBytes; i++) {
+                String temp = Integer.toHexString(paddingBytes); // Convert padding bytes to hex
+                temp = String.format("%2s", temp).replace(' ', '0'); // Pad with leading zeros
+                hex += temp; // Add padding bytes
+            }
+        } else {
+            
+            // Pad with 0x10 if the length is a multiple of 32
+            String temp = Integer.toHexString(0x10); // Convert 0x10 to hex
+            for (int i = 0; i < 16; i++) {
+                temp = String.format("%2s", temp).replace(' ', '0'); // Pad with leading zeros
+                hex += temp; // Add padding bytes
+            }
+        }
+        return hex; // Return the padded hex string
     }
 
     public String cipher(String[][] block, boolean encryptMode) {
@@ -98,6 +221,20 @@ public class AES {
         }
         return hexString.toString();
     }
+
+    public static String removePKCS7PaddingFromHex(String hex) {
+        if (hex.length() < 2 || hex.length() % 2 != 0)
+            throw new IllegalArgumentException("Hex string must have even length and be non-empty.");
+
+        int paddingByte = Integer.parseInt(hex.substring(hex.length() - 2), 16);
+        int totalBytes = hex.length() / 2;
+
+        if (paddingByte < 1 || paddingByte > 16 || paddingByte > totalBytes)
+            throw new IllegalArgumentException("Invalid PKCS#7 padding value: " + paddingByte);
+
+        return hex.substring(0, hex.length() - (paddingByte * 2));
+    }
+
 
     public static String hexToString(String hex) {
         StringBuilder str = new StringBuilder();
@@ -156,8 +293,8 @@ public class AES {
         }
         return block;
     }
-
-    private String blockToHex(String[][] block) {
+ 
+    public static String blockToHex(String[][] block) {
         StringBuilder hex = new StringBuilder();
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -167,7 +304,7 @@ public class AES {
         return hex.toString();
     }
 
-    private void printBlock(String[][] block) {
+    public static void printBlock(String[][] block) {
         if (Tools.DEBUG) {
                 for (int i = 0; i < 4; i++) {
                     for (int j = 0; j < 4; j++) {
@@ -347,17 +484,18 @@ public class AES {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static void main(String[] args) {
 
-        String plainText = "Big Monkey Manxd"; // Example plaintext (AES Debug.txt)
+        String plainText = "Two One Nine Two"; // Example plaintext (AES Debug.txt)
         String key = "Thats my Kung Fu"; // Example key (AES Debug.txt)
+        
 
         System.out.println("Original: " + plainText);
         System.out.println("Key: " + key);
         
         AES aes = new AES(key); // Create our AES object with the provided example key (AES Debug.txt)
-        String cipherText = aes.encrypt(plainText, false); // Encrypt the provided example plaintext (AES Debug.txt)
+        String cipherText = aes.encrypt(plainText, true); // Encrypt the provided example plaintext (AES Debug.txt)
         System.out.println("Encrypted: " + cipherText); // Print the ciphertext in hex format
 
-        String decryptedText = aes.decrypt(cipherText, false); // Decrypt the ciphertext
+        String decryptedText = aes.decrypt(cipherText, true); // Decrypt the ciphertext
         System.out.println("Decrypted: " + decryptedText); // Print the decrypted text
 
     }
